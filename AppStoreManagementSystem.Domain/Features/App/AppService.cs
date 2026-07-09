@@ -1,11 +1,12 @@
 ﻿using AppStoreManagementSystem.Database.AppDbContextModel;
 using AppStoreManagementSystem.Domain.Features.Api.Features.App.Models;
+using AppStoreManagementSystem.Domain.Features.App.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 
 
 namespace AppStoreManagementSystem.Domain.Features.App;
@@ -66,4 +67,121 @@ public class AppService
         }
 
     }
+
+    public Result<int> AppCreate(AppCreateRequestModel request)
+    {
+        try
+        {
+            TblApp app = new TblApp
+            {
+                AppName = request.AppName,
+                Description = request.Description,
+                Version = request.Version,
+                FileSize = request.FileSize,
+                FilePath = request.FilePath,
+                Status = request.Status,
+                CategoryId = request.CategoryId,
+                CreatedAt = DateTime.Now
+            };
+
+
+            _db.TblApps.Add(app);
+
+            int result = _db.SaveChanges();
+
+
+            return new Result<int>
+            {
+                IsSuccess = true,
+                Message = "App created successfully.",
+                Data = app.AppId
+            };
+
+        }
+        catch (Exception ex)
+        {
+            return new Result<int>
+            {
+                IsSuccess = false,
+                //Message = ex.Message
+                Message = ex.InnerException?.Message ?? ex.Message
+
+            };
+        }
+    }
+
+    public Result<int> AppUpdate(AppUpdateRequestModel request)
+    {
+        try
+        {
+            var app = _db.TblApps
+                .FirstOrDefault(x => x.AppId == request.AppId);
+
+
+            if (app == null)
+            {
+                return new Result<int>
+                {
+                    IsSuccess = false,
+                    Message = "App not found."
+                };
+            }
+
+
+            app.AppName = request.AppName;
+            app.Description = request.Description;
+            app.Version = request.Version;
+            app.Status = request.Status;
+
+
+            _db.SaveChanges();
+
+
+            return new Result<int>
+            {
+                IsSuccess = true,
+                Message = "App updated successfully.",
+                Data = app.AppId
+            };
+        }
+        catch (Exception ex)
+        {
+            return new Result<int>
+            {
+                IsSuccess = false,
+                Message = ex.Message
+            };
+        }
+    }
+
+
+    public Result<int> AppDelete(int id)
+    {
+        var app = _db.TblApps
+            .FirstOrDefault(x => x.AppId == id);
+
+
+        if (app == null)
+        {
+            return new Result<int>
+            {
+                IsSuccess = false,
+                Message = "App not found."
+            };
+        }
+
+
+        app.Status = "Inactive";
+
+
+        _db.SaveChanges();
+
+
+        return new Result<int>
+        {
+            IsSuccess = true,
+            Message = "App deleted successfully."
+        };
+    }
+
 }

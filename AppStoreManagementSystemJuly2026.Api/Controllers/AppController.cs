@@ -1,8 +1,8 @@
 ﻿using AppStoreManagementSystem.Database.AppDbContextModel;
+using AppStoreManagementSystem.Domain;
 using AppStoreManagementSystem.Domain.Features.Api.Features.App.Models;
 using AppStoreManagementSystem.Domain.Features.App;
-using AppStoreManagementSystem.Domain;
-
+using AppStoreManagementSystem.Domain.Features.App.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,5 +32,31 @@ namespace AppStoreManagementSystemJuly2026.Api.Controllers
 
             return Execute(result);
         }
+
+        [HttpPost]
+        public IActionResult AppCreate(AppCreateRequestModel request)
+        {
+            var result = _appService.AppCreate(request);
+
+            return Execute(result);
+        }
+
+        [HttpPut]
+        public IActionResult AppUpdate(AppUpdateRequestModel request)
+        {
+            var result = _appService.AppUpdate(request);
+
+            return Execute(result);
+        }
+
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            var result = _appService.AppDelete(id);
+
+            return Execute(result);
+        }
+
+
     }
 }
