@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="AppStoreManagementSystem.Database/AppStoreManagementSystem.Database.csproj" />
+  <Project Path="AppStoreManagementSystem.Domain/AppStoreManagementSystem.Domain.csproj" />
+  <Project Path="AppStoreManagementSystemJuly2026.Api/AppStoreManagementSystemJuly2026.Api.csproj" />
+</Solution>
