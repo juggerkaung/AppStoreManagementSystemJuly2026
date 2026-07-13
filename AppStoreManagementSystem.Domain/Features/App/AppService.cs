@@ -30,6 +30,21 @@ public class AppService
             .OrderByDescending(x=> x.AppId)
             .Skip((request.PageNo - 1) * request.PageSize)
             .Take(request.PageSize)
+            .Select(x => new AppModel
+            {
+                AppId = x.AppId,
+                AppName = x.AppName,
+                Description = x.Description,
+                Version = x.Version,
+                FileSize = x.FileSize,
+                Status = x.Status,
+                CreatedAt = x.CreatedAt,
+                CategoryName = _db.TblAppCategories
+                    .Where(c => c.CategoryId == x.CategoryId && c.IsActive && !c.IsDelete)
+                    .Select(c => c.CategoryName)
+                    .FirstOrDefault() ?? string.Empty,
+                DownloadCount = _db.TblDownloads.Count(d => d.AppId == x.AppId)
+            })
             .ToList();
 
             Result<AppListResponseModel> result = new Result<AppListResponseModel>
@@ -38,18 +53,7 @@ public class AppService
                 Message = "Apps retrieved successfully.",
                 Data = new AppListResponseModel
                 {
-                    Apps = apps.Select(x => new AppModel
-                    {
-                        AppId = x.AppId,
-                        AppName = x.AppName,
-                        Description = x.Description,
-                        Version = x.Version,
-                        FileSize = x.FileSize,
-                        Status = x.Status,
-                        CreatedAt = x.CreatedAt,
-                        /*DownloadCount = x.TblDownloads.Count*/
-                        DownloadCount = _db.TblDownloads.Count(d => d.AppId == x.AppId)
-                    }).ToList()
+                    Apps = apps
                 }
             };
 

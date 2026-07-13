@@ -23,7 +23,7 @@
 
             @if(response.Data is not null)
             {
-                   foreach(var item in response.Data?.Apps)
+                   foreach(var item in response.Data.Apps)
             {
                 <tr>
                         <td>@(++rowNo)</td>
@@ -33,7 +33,7 @@
                         <td>@item.FileSize</td>
                         <td>@item.Status</td>
                         <td>@item.CreatedAt</td>
-                        <td>@item.Category</td>
+                        <td>@item.CategoryName</td>
                         @* <td>@item.TblDownloads</td> *@
                         <td>@item.DownloadCount</td>
                      

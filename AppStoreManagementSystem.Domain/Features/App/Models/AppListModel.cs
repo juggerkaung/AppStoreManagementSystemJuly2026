@@ -64,7 +64,5 @@ public class AppModel
 
     public int DownloadCount { get; set; }
 
-    public virtual TblAppCategory Category { get; set; } = null!;
-
-    public virtual ICollection<TblDownload> TblDownloads { get; set; } = new List<TblDownload>();
+    public string CategoryName { get; set; } = string.Empty;
 }
