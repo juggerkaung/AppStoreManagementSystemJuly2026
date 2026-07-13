@@ -74,10 +74,55 @@ public class AppService
 
     }
 
+    public Result<List<AppCategoryListModel>> GetCategoryList()
+    {
+        try
+        {
+            var categories = _db.TblAppCategories
+                .AsNoTracking()
+                .Where(x => x.IsActive && !x.IsDelete)
+                .OrderBy(x => x.CategoryName)
+                .Select(x => new AppCategoryListModel
+                {
+                    CategoryId = x.CategoryId,
+                    CategoryName = x.CategoryName
+                })
+                .ToList();
+
+            return new Result<List<AppCategoryListModel>>
+            {
+                IsSuccess = true,
+                Message = "Categories retrieved successfully.",
+                Data = categories
+            };
+        }
+        catch (Exception ex)
+        {
+            return new Result<List<AppCategoryListModel>>
+            {
+                IsSuccess = false,
+                Message = ex.Message
+            };
+        }
+    }
+
     public Result<int> AppCreate(AppCreateRequestModel request)
     {
         try
         {
+            bool categoryExists = _db.TblAppCategories
+                .AsNoTracking()
+                .Any(x => x.CategoryId == request.CategoryId && x.IsActive && !x.IsDelete);
+
+            if (!categoryExists)
+            {
+                return new Result<int>
+                {
+                    IsSuccess = false,
+                    Message = "Selected category is not available."
+                };
+            }
+
             TblApp app = new TblApp
             {
                 AppName = request.AppName,
@@ -85,7 +130,7 @@ public class AppService
                 Version = request.Version,
                 FileSize = request.FileSize,
                 FilePath = request.FilePath,
-                Status = request.Status,
+                Status = "Active",
                 CategoryId = request.CategoryId,
                 CreatedAt = DateTime.Now
             };

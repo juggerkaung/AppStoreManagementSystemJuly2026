@@ -33,6 +33,14 @@ namespace AppStoreManagementSystemJuly2026.Api.Controllers
             return Execute(result);
         }
 
+        [HttpGet("categories")]
+        public IActionResult CategoryList()
+        {
+            var result = _appService.GetCategoryList();
+
+            return Execute(result);
+        }
+
         [HttpPost]
         public IActionResult AppCreate(AppCreateRequestModel request)
         {

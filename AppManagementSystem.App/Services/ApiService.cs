@@ -1,6 +1,7 @@
 ﻿using AppStoreManagementSystem.Domain;
 using AppStoreManagementSystem.Domain.Features.Api.Features.App.Models;
 using AppStoreManagementSystem.Domain.Features.App;
+using AppStoreManagementSystem.Domain.Features.App.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AppManagementSystem.App.Services;
@@ -62,6 +63,42 @@ public class ApiService
         return result!;
 
     }
+
+    public async Task<Result<List<AppCategoryListModel>>> GetCategories()
+    {
+        var httpClient = _httpclientFactory.CreateClient();
+        httpClient.BaseAddress = new Uri(_baseUrl);
+
+        var response = await httpClient.GetAsync(ApiEndpoints.AppCategories);
+        var text = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(text);
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<Result<List<AppCategoryListModel>>>();
+
+        return result!;
+    }
+
+    public async Task<Result<int>> CreateApp(AppCreateRequestModel request)
+    {
+        var httpClient = _httpclientFactory.CreateClient();
+        httpClient.BaseAddress = new Uri(_baseUrl);
+
+        var response = await httpClient.PostAsJsonAsync(ApiEndpoints.CreateApp, request);
+        var text = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(text);
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<Result<int>>();
+
+        return result!;
+    }
 }
 
 public class ApiEndpoints
@@ -69,5 +106,6 @@ public class ApiEndpoints
     public const string AppList = "api/app";
     public const string AppDetail = "api/app/{appId}";
     public const string CreateApp = "api/app";
+    public const string AppCategories = "api/app/categories";
 }
 
