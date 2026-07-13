@@ -46,7 +46,9 @@ public class AppService
                         Version = x.Version,
                         FileSize = x.FileSize,
                         Status = x.Status,
-                        CreatedAt = x.CreatedAt
+                        CreatedAt = x.CreatedAt,
+                        /*DownloadCount = x.TblDownloads.Count*/
+                        DownloadCount = _db.TblDownloads.Count(d => d.AppId == x.AppId)
                     }).ToList()
                 }
             };

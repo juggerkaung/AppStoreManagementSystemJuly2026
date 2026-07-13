@@ -2,6 +2,7 @@
   <Folder Name="/Solution Items/">
     <File Path="README.md" />
   </Folder>
+  <Project Path="AppManagementSystem.App/AppManagementSystem.App.csproj" Id="be51ab02-0f44-400d-af23-3dc5308e3513" />
   <Project Path="AppStoreManagementSystem.Database/AppStoreManagementSystem.Database.csproj" />
   <Project Path="AppStoreManagementSystem.Domain/AppStoreManagementSystem.Domain.csproj" />
   <Project Path="AppStoreManagementSystemJuly2026.Api/AppStoreManagementSystemJuly2026.Api.csproj" />

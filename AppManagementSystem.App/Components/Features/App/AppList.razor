@@ -1,0 +1,49 @@
+﻿@page "/app-list"
+
+@inject ApiService ApiService
+
+@if (response.IsSuccess)
+{
+
+    <table class="table table-responsive">
+        <thead>
+            <tr>
+                <th>No.</th>
+            <th>AppName</th>
+            <th>Description</th>
+            <th>Version</th>
+            <th>FileSize</th>
+            <th>Status</th>
+            <th>CreatedAt</th>
+            <th>Category</th>
+            <th>Download</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            @if(response.Data is not null)
+            {
+                   foreach(var item in response.Data?.Apps)
+            {
+                <tr>
+                        <td>@(++rowNo)</td>
+                        <td>@item.AppName</td>
+                        <td>@item.Description</td>
+                        <td>@item.Version</td>
+                        <td>@item.FileSize</td>
+                        <td>@item.Status</td>
+                        <td>@item.CreatedAt</td>
+                        <td>@item.Category</td>
+                        @* <td>@item.TblDownloads</td> *@
+                        <td>@item.DownloadCount</td>
+                     
+
+                </tr>
+            }
+                
+            }
+         
+
+        </tbody>
+    </table>
+}
