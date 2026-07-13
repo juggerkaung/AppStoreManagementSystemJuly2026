@@ -2,14 +2,18 @@
 
 @inject ApiService ApiService
 
-<div class="mb-3">
-    @if (!showUploadForm)
+<div class="mb-3 d-flex gap-2 flex-wrap">
+    <button class="btn btn-primary" @onclick="ShowUploadForm">Upload App</button>
+    <button class="btn btn-outline-primary" @onclick="ShowEditApps">Edit App</button>
+    <button class="btn btn-outline-success" @onclick="ShowAddCategory">Add Category</button>
+    <button class="btn btn-outline-secondary" @onclick="ShowEditCategories">Edit Category</button>
+    @if (currentMode != ListMode)
     {
-        <button class="btn btn-primary" @onclick="ShowUploadForm">Upload App</button>
+        <button class="btn btn-link" @onclick="ShowList">Back to List</button>
     }
 </div>
 
-@if (showUploadForm)
+@if (currentMode == UploadMode)
 {
     <div class="border rounded p-3 mb-3">
         <h5>Upload App</h5>
@@ -62,10 +66,10 @@
             }
 
             <div class="mt-3">
-                <button type="submit" class="btn btn-success" disabled="@isUploading">
-                    @(isUploading ? "Uploading..." : "Save")
+                <button type="submit" class="btn btn-success" disabled="@isBusy">
+                    @(isBusy ? "Uploading..." : "Save")
                 </button>
-                <button type="button" class="btn btn-secondary ms-2" @onclick="HideUploadForm" disabled="@isUploading">
+                <button type="button" class="btn btn-secondary ms-2" @onclick="ShowList" disabled="@isBusy">
                     Cancel
                 </button>
             </div>
@@ -73,7 +77,179 @@
     </div>
 }
 
-@if (response.IsSuccess)
+@if (currentMode == EditAppMode && isEditingApp)
+{
+    <div class="border rounded p-3 mb-3">
+        <h5>Edit App</h5>
+
+        <EditForm Model="editAppRequest" OnValidSubmit="ConfirmEditApp">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">AppName</label>
+                    <InputText class="form-control" @bind-Value="editAppRequest.AppName" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Version</label>
+                    <InputText class="form-control" @bind-Value="editAppRequest.Version" />
+                    <small class="text-muted">Current: @originalVersion</small>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">FileSize</label>
+                    <InputNumber class="form-control" @bind-Value="editAppRequest.FileSize" />
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">Description</label>
+                    <InputTextArea class="form-control" @bind-Value="editAppRequest.Description" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Category</label>
+                    <InputSelect class="form-select" @bind-Value="editAppRequest.CategoryId">
+                        <option value="0">Select Category</option>
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category.CategoryId">@category.CategoryName</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label d-block">Status</label>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="appStatus" checked="@(editAppRequest.Status == "Active")" @onchange="@(() => SetAppStatus("Active"))" />
+                        <label class="form-check-label">Active</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="appStatus" checked="@(editAppRequest.Status == "Inactive")" @onchange="@(() => SetAppStatus("Inactive"))" />
+                        <label class="form-check-label">Inactive</label>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label d-block">IsDelete</label>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="appIsDelete" checked="@(!editAppRequest.IsDelete)" @onchange="@(() => SetAppIsDelete(false))" />
+                        <label class="form-check-label">0</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="appIsDelete" checked="@editAppRequest.IsDelete" @onchange="@(() => SetAppIsDelete(true))" />
+                        <label class="form-check-label">1</label>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(appEditMessage))
+            {
+                <div class="alert alert-info mt-3 mb-0">@appEditMessage</div>
+            }
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-success" disabled="@isBusy">Confirm</button>
+                <button type="button" class="btn btn-secondary ms-2" @onclick="CancelEditApp" disabled="@isBusy">
+                    Cancel
+                </button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@if (currentMode == AddCategoryMode)
+{
+    <div class="border rounded p-3 mb-3">
+        <h5>Add Category</h5>
+
+        <EditForm Model="categoryCreateRequest" OnValidSubmit="ConfirmAddCategory">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Category Name</label>
+                    <InputText class="form-control" @bind-Value="categoryCreateRequest.CategoryName" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Description</label>
+                    <InputTextArea class="form-control" @bind-Value="categoryCreateRequest.Description" />
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(categoryMessage))
+            {
+                <div class="alert alert-info mt-3 mb-0">@categoryMessage</div>
+            }
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-success" disabled="@isBusy">Confirm</button>
+                <button type="button" class="btn btn-secondary ms-2" @onclick="ShowList" disabled="@isBusy">
+                    Cancel
+                </button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@if (currentMode == EditCategoryMode && isEditingCategory)
+{
+    <div class="border rounded p-3 mb-3">
+        <h5>Edit Category</h5>
+
+        <EditForm Model="categoryEditRequest" OnValidSubmit="ConfirmEditCategory">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Category Name</label>
+                    <InputText class="form-control" @bind-Value="categoryEditRequest.CategoryName" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Description</label>
+                    <InputTextArea class="form-control" @bind-Value="categoryEditRequest.Description" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label d-block">IsActive</label>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="categoryIsActive" checked="@categoryEditRequest.IsActive" @onchange="@(() => SetCategoryIsActive(true))" />
+                        <label class="form-check-label">1</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="categoryIsActive" checked="@(!categoryEditRequest.IsActive)" @onchange="@(() => SetCategoryIsActive(false))" />
+                        <label class="form-check-label">0</label>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label d-block">IsDelete</label>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="categoryIsDelete" checked="@(!categoryEditRequest.IsDelete)" @onchange="@(() => SetCategoryIsDelete(false))" />
+                        <label class="form-check-label">0</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="categoryIsDelete" checked="@categoryEditRequest.IsDelete" @onchange="@(() => SetCategoryIsDelete(true))" />
+                        <label class="form-check-label">1</label>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(categoryMessage))
+            {
+                <div class="alert alert-info mt-3 mb-0">@categoryMessage</div>
+            }
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-success" disabled="@isBusy">Confirm</button>
+                <button type="button" class="btn btn-secondary ms-2" @onclick="CancelEditCategory" disabled="@isBusy">
+                    Cancel
+                </button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@if (currentMode == ListMode || currentMode == EditAppMode)
 {
     <table class="table table-responsive">
         <thead>
@@ -87,6 +263,10 @@
                 <th>CreatedAt</th>
                 <th>Category</th>
                 <th>Download</th>
+                @if (currentMode == EditAppMode)
+                {
+                    <th>Action</th>
+                }
             </tr>
         </thead>
         <tbody>
@@ -105,9 +285,69 @@
                         <td>@item.CreatedAt</td>
                         <td>@item.CategoryName</td>
                         <td>@item.DownloadCount</td>
+                        @if (currentMode == EditAppMode)
+                        {
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="@(() => StartEditApp(item))">Edit</button>
+                            </td>
+                        }
                     </tr>
                 }
             }
         </tbody>
     </table>
+}
+
+@if (currentMode == EditCategoryMode)
+{
+    <table class="table table-responsive">
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>Category Name</th>
+                <th>Description</th>
+                <th>IsActive</th>
+                <th>CreatedAt</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                var categoryRowNo = 0;
+            }
+            @foreach (var category in editCategories)
+            {
+                <tr>
+                    <td>@(++categoryRowNo)</td>
+                    <td>@category.CategoryName</td>
+                    <td>@category.Description</td>
+                    <td>@(category.IsActive ? 1 : 0)</td>
+                    <td>@category.CreatedAt</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="@(() => StartEditCategory(category))">Edit</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (showConfirmModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0, 0, 0, .45);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Changes</h5>
+                </div>
+                <div class="modal-body">
+                    <p>@confirmMessage</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="ConfirmModalNo" disabled="@isBusy">No</button>
+                    <button class="btn btn-primary" @onclick="ConfirmModalYes" disabled="@isBusy">Yes</button>
+                </div>
+            </div>
+        </div>
+    </div>
 }

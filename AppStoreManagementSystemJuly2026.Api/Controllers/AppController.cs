@@ -34,9 +34,25 @@ namespace AppStoreManagementSystemJuly2026.Api.Controllers
         }
 
         [HttpGet("categories")]
-        public IActionResult CategoryList()
+        public IActionResult CategoryList([FromQuery] bool includeInactive = false)
         {
-            var result = _appService.GetCategoryList();
+            var result = _appService.GetCategoryList(includeInactive);
+
+            return Execute(result);
+        }
+
+        [HttpPost("categories")]
+        public IActionResult CategoryCreate(AppCategoryCreateRequestModel request)
+        {
+            var result = _appService.CategoryCreate(request);
+
+            return Execute(result);
+        }
+
+        [HttpPut("categories")]
+        public IActionResult CategoryUpdate(AppCategoryUpdateRequestModel request)
+        {
+            var result = _appService.CategoryUpdate(request);
 
             return Execute(result);
         }

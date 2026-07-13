@@ -1,22 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
 
-namespace AppStoreManagementSystem.Domain.Features.App.Models
+namespace AppStoreManagementSystem.Domain.Features.App.Models;
+
+public class AppUpdateRequestModel
 {
-    public class AppUpdateRequestModel
-    {
-        public int AppId { get; set; }
+    public int AppId { get; set; }
 
-        public string AppName { get; set; } = null!;
+    [Required]
+    public string AppName { get; set; } = null!;
 
-        public string? Description { get; set; }
+    public string? Description { get; set; }
 
+    [Required]
+    public string Version { get; set; } = null!;
 
-        public string Version { get; set; } = null!;
+    [Range(1, long.MaxValue)]
+    public long FileSize { get; set; }
 
-        public string Status { get; set; } = null!;
-    }
+    [Required]
+    public string Status { get; set; } = "Active";
+
+    [Range(1, int.MaxValue, ErrorMessage = "Please select a category.")]
+    public int CategoryId { get; set; }
+
+    public bool IsDelete { get; set; }
 }

@@ -24,28 +24,38 @@ public class AppService
     {
         try
         {
-            var apps = _db.TblApps
-            .AsNoTracking()
-            .Where(x => x.Status == "Active")
-            .OrderByDescending(x=> x.AppId)
-            .Skip((request.PageNo - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .Select(x => new AppModel
+            var query = _db.TblApps
+                .AsNoTracking()
+                .Where(x => !x.IsDelete);
+
+            if (!request.IncludeInactive)
             {
-                AppId = x.AppId,
-                AppName = x.AppName,
-                Description = x.Description,
-                Version = x.Version,
-                FileSize = x.FileSize,
-                Status = x.Status,
-                CreatedAt = x.CreatedAt,
-                CategoryName = _db.TblAppCategories
-                    .Where(c => c.CategoryId == x.CategoryId && c.IsActive && !c.IsDelete)
-                    .Select(c => c.CategoryName)
-                    .FirstOrDefault() ?? string.Empty,
-                DownloadCount = _db.TblDownloads.Count(d => d.AppId == x.AppId)
-            })
-            .ToList();
+                query = query.Where(x => x.Status == "Active");
+            }
+
+            var apps = query
+                .OrderByDescending(x => x.AppId)
+                .Skip((request.PageNo - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .Select(x => new AppModel
+                {
+                    AppId = x.AppId,
+                    AppName = x.AppName,
+                    Description = x.Description,
+                    CategoryId = x.CategoryId,
+                    Version = x.Version,
+                    FilePath = x.FilePath,
+                    FileSize = x.FileSize,
+                    Status = x.Status,
+                    CreatedAt = x.CreatedAt,
+                    IsDelete = x.IsDelete,
+                    CategoryName = _db.TblAppCategories
+                        .Where(c => c.CategoryId == x.CategoryId && !c.IsDelete)
+                        .Select(c => c.CategoryName)
+                        .FirstOrDefault() ?? string.Empty,
+                    DownloadCount = _db.TblDownloads.Count(d => d.AppId == x.AppId)
+                })
+                .ToList();
 
             Result<AppListResponseModel> result = new Result<AppListResponseModel>
             {
@@ -74,18 +84,29 @@ public class AppService
 
     }
 
-    public Result<List<AppCategoryListModel>> GetCategoryList()
+    public Result<List<AppCategoryListModel>> GetCategoryList(bool includeInactive = false)
     {
         try
         {
-            var categories = _db.TblAppCategories
+            var query = _db.TblAppCategories
                 .AsNoTracking()
-                .Where(x => x.IsActive && !x.IsDelete)
+                .Where(x => !x.IsDelete);
+
+            if (!includeInactive)
+            {
+                query = query.Where(x => x.IsActive);
+            }
+
+            var categories = query
                 .OrderBy(x => x.CategoryName)
                 .Select(x => new AppCategoryListModel
                 {
                     CategoryId = x.CategoryId,
-                    CategoryName = x.CategoryName
+                    CategoryName = x.CategoryName,
+                    Description = x.Description,
+                    IsActive = x.IsActive,
+                    CreatedAt = x.CreatedAt,
+                    IsDelete = x.IsDelete
                 })
                 .ToList();
 
@@ -166,7 +187,7 @@ public class AppService
         try
         {
             var app = _db.TblApps
-                .FirstOrDefault(x => x.AppId == request.AppId);
+                .FirstOrDefault(x => x.AppId == request.AppId && !x.IsDelete);
 
 
             if (app == null)
@@ -178,11 +199,35 @@ public class AppService
                 };
             }
 
+            bool categoryExists = _db.TblAppCategories
+                .AsNoTracking()
+                .Any(x => x.CategoryId == request.CategoryId && x.IsActive && !x.IsDelete);
+
+            if (!categoryExists)
+            {
+                return new Result<int>
+                {
+                    IsSuccess = false,
+                    Message = "Selected category is not available."
+                };
+            }
+
+            if (!IsVersionGreater(request.Version, app.Version))
+            {
+                return new Result<int>
+                {
+                    IsSuccess = false,
+                    Message = $"Version must be greater than current version ({app.Version})."
+                };
+            }
 
             app.AppName = request.AppName;
             app.Description = request.Description;
             app.Version = request.Version;
+            app.FileSize = request.FileSize;
             app.Status = request.Status;
+            app.CategoryId = request.CategoryId;
+            app.IsDelete = request.IsDelete;
 
 
             _db.SaveChanges();
@@ -203,6 +248,149 @@ public class AppService
                 Message = ex.Message
             };
         }
+    }
+
+    public Result<int> CategoryCreate(AppCategoryCreateRequestModel request)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(request.CategoryName))
+            {
+                return new Result<int>
+                {
+                    IsSuccess = false,
+                    Message = "Category name is required."
+                };
+            }
+
+            bool exists = _db.TblAppCategories
+                .AsNoTracking()
+                .Any(x => x.CategoryName == request.CategoryName && !x.IsDelete);
+
+            if (exists)
+            {
+                return new Result<int>
+                {
+                    IsSuccess = false,
+                    Message = "Category name already exists."
+                };
+            }
+
+            TblAppCategory category = new TblAppCategory
+            {
+                CategoryName = request.CategoryName,
+                Description = request.Description,
+                IsActive = true,
+                CreatedAt = DateTime.Now,
+                IsDelete = false
+            };
+
+            _db.TblAppCategories.Add(category);
+            _db.SaveChanges();
+
+            return new Result<int>
+            {
+                IsSuccess = true,
+                Message = "Category added successfully.",
+                Data = category.CategoryId
+            };
+        }
+        catch (Exception ex)
+        {
+            return new Result<int>
+            {
+                IsSuccess = false,
+                Message = ex.InnerException?.Message ?? ex.Message
+            };
+        }
+    }
+
+    public Result<int> CategoryUpdate(AppCategoryUpdateRequestModel request)
+    {
+        try
+        {
+            var category = _db.TblAppCategories
+                .FirstOrDefault(x => x.CategoryId == request.CategoryId && !x.IsDelete);
+
+            if (category == null)
+            {
+                return new Result<int>
+                {
+                    IsSuccess = false,
+                    Message = "Category not found."
+                };
+            }
+
+            if (string.IsNullOrWhiteSpace(request.CategoryName))
+            {
+                return new Result<int>
+                {
+                    IsSuccess = false,
+                    Message = "Category name is required."
+                };
+            }
+
+            bool exists = _db.TblAppCategories
+                .AsNoTracking()
+                .Any(x => x.CategoryId != request.CategoryId && x.CategoryName == request.CategoryName && !x.IsDelete);
+
+            if (exists)
+            {
+                return new Result<int>
+                {
+                    IsSuccess = false,
+                    Message = "Category name already exists."
+                };
+            }
+
+            category.CategoryName = request.CategoryName;
+            category.Description = request.Description;
+            category.IsActive = request.IsActive;
+            category.IsDelete = request.IsDelete;
+
+            _db.SaveChanges();
+
+            return new Result<int>
+            {
+                IsSuccess = true,
+                Message = "Category updated successfully.",
+                Data = category.CategoryId
+            };
+        }
+        catch (Exception ex)
+        {
+            return new Result<int>
+            {
+                IsSuccess = false,
+                Message = ex.InnerException?.Message ?? ex.Message
+            };
+        }
+    }
+
+    private static bool IsVersionGreater(string newVersion, string currentVersion)
+    {
+        var newParts = ParseVersion(newVersion);
+        var currentParts = ParseVersion(currentVersion);
+        int maxLength = Math.Max(newParts.Count, currentParts.Count);
+
+        for (int i = 0; i < maxLength; i++)
+        {
+            int newPart = i < newParts.Count ? newParts[i] : 0;
+            int currentPart = i < currentParts.Count ? currentParts[i] : 0;
+
+            if (newPart > currentPart) return true;
+            if (newPart < currentPart) return false;
+        }
+
+        return false;
+    }
+
+    private static List<int> ParseVersion(string version)
+    {
+        return version
+            .Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(x => int.TryParse(x, out int value) ? value : -1)
+            .ToList();
     }
 
 

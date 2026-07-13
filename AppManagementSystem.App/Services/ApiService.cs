@@ -25,33 +25,10 @@ public class ApiService
     {
         var httpClient = _httpclientFactory.CreateClient();
         httpClient.BaseAddress = new Uri(_baseUrl);
-        string url = $"{ApiEndpoints.AppList}?pageNo={request.PageNo}&pageSize={request.PageSize}";
-        // var response = await httpClient.GetAsync(url);
-
-        //  var result = await response.Content.ReadFromJsonAsync<Result<AppListResponseModel>>();
-
-        Console.WriteLine(httpClient.BaseAddress + url);
-        //var response = await httpClient.GetAsync(url);
-
-        //Console.WriteLine(response.StatusCode);
-
-        //var text = await response.Content.ReadAsStringAsync();
-        //Console.WriteLine(text);
-
-        //response.EnsureSuccessStatusCode();
-
-        //var result = await response.Content.ReadFromJsonAsync<Result<AppListResponseModel>>();
-
-        //return result!;
+        string url = $"{ApiEndpoints.AppList}?pageNo={request.PageNo}&pageSize={request.PageSize}&includeInactive={request.IncludeInactive}";
         var response = await httpClient.GetAsync(url);
 
-        Console.WriteLine($"Status = {response.StatusCode}");
-
         var text = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"Response = {text}");
-
-        // Don't call EnsureSuccessStatusCode yet
-        // response.EnsureSuccessStatusCode();
 
         if (!response.IsSuccessStatusCode)
         {
@@ -61,15 +38,14 @@ public class ApiService
         var result = await response.Content.ReadFromJsonAsync<Result<AppListResponseModel>>();
 
         return result!;
-
     }
 
-    public async Task<Result<List<AppCategoryListModel>>> GetCategories()
+    public async Task<Result<List<AppCategoryListModel>>> GetCategories(bool includeInactive = false)
     {
         var httpClient = _httpclientFactory.CreateClient();
         httpClient.BaseAddress = new Uri(_baseUrl);
 
-        var response = await httpClient.GetAsync(ApiEndpoints.AppCategories);
+        var response = await httpClient.GetAsync($"{ApiEndpoints.AppCategories}?includeInactive={includeInactive}");
         var text = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -88,6 +64,60 @@ public class ApiService
         httpClient.BaseAddress = new Uri(_baseUrl);
 
         var response = await httpClient.PostAsJsonAsync(ApiEndpoints.CreateApp, request);
+        var text = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(text);
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<Result<int>>();
+
+        return result!;
+    }
+
+    public async Task<Result<int>> UpdateApp(AppUpdateRequestModel request)
+    {
+        var httpClient = _httpclientFactory.CreateClient();
+        httpClient.BaseAddress = new Uri(_baseUrl);
+
+        var response = await httpClient.PutAsJsonAsync(ApiEndpoints.AppList, request);
+        var text = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(text);
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<Result<int>>();
+
+        return result!;
+    }
+
+    public async Task<Result<int>> CreateCategory(AppCategoryCreateRequestModel request)
+    {
+        var httpClient = _httpclientFactory.CreateClient();
+        httpClient.BaseAddress = new Uri(_baseUrl);
+
+        var response = await httpClient.PostAsJsonAsync(ApiEndpoints.AppCategories, request);
+        var text = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception(text);
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<Result<int>>();
+
+        return result!;
+    }
+
+    public async Task<Result<int>> UpdateCategory(AppCategoryUpdateRequestModel request)
+    {
+        var httpClient = _httpclientFactory.CreateClient();
+        httpClient.BaseAddress = new Uri(_baseUrl);
+
+        var response = await httpClient.PutAsJsonAsync(ApiEndpoints.AppCategories, request);
         var text = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
